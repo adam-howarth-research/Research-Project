@@ -1,0 +1,2 @@
+# Research-Project
+This project contains the code required for conducting the experimental phase of  DEVELOPING A COST FRAMEWORK FOR DYNAMIC NETWORK SECURITY MONITORING: AN ANALYSIS OF BUSINESS PROCESS INDUCED NETWORK RECONFIGURATION 
