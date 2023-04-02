@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Simulated node count
+node_count="$1"
+# Per node complexity factor, repeat node_count for n^2 
+time_complexity_factor="$2"
+# how frequently should this run in seconds
+frequency="$3"
+
+
+docker build -t baseline .
+docker run --rm baseline $node_count $time_complexity_factor $frequency
