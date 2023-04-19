@@ -5,6 +5,10 @@
 *.so
 *.dylib
 
+# Test files
+*.pcap
+*.pcapng
+
 # Test binary, built with `go test -c`
 *.test
 

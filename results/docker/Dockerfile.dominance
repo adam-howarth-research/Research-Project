@@ -1,0 +1,9 @@
+FROM golang:1.17
+
+WORKDIR /app
+
+COPY ../Rank/dominance.go /app
+
+RUN go build dominance.go
+
+ENTRYPOINT ["./dominance"]
