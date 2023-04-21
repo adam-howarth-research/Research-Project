@@ -249,6 +249,7 @@ func main() {
 	simulatedEvents := generateSimulatedEvents(subnetStatsMap, hostStatsMap, rcdCount)
 	writeCSV(csvPath, simulatedEvents)
 	displaySimulatedEvents(simulatedEvents)
+	fmt.Printf("Host Count: %d\n", len(hostStatsMap))
 }
 
 func displaySubnetStats(subnetStatsMap map[string]*SubnetStats) {
@@ -554,3 +555,4 @@ func findTimestamps(filename string) (time.Time, time.Time, error) {
 
 	return earliest, latest, nil
 }
+

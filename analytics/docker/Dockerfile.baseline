@@ -1,9 +1,0 @@
-FROM golang:1.17
-
-WORKDIR /app
-
-COPY ../go/baseline.go /app
-
-RUN go build baseline.go
-
-ENTRYPOINT ["./baseline"]

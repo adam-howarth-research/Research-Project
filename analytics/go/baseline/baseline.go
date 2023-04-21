@@ -23,6 +23,8 @@ func compute(nodes int, factor int) {
 
 func main() {
 
+	log.Info().Msgf("%v", os.Args)
+
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMicro
 
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
