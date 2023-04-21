@@ -1,11 +1,15 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
 	"math/rand"
 	"net"
 	"os"
 	"sort"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -14,10 +18,23 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+type AvgBytes struct {
+	Total int
+	Bytes int 
+}
+
+func (aB *AvgBytes) ResolveAverage() int {
+	return int(aB.Bytes/aB.Total)
+}
+
 type ConverstationStats struct {
 	TCPPortUsage      map[uint16]int
+	TCPPortBytes	  map[uint16]*AvgBytes
 	UDPPortUsage      map[uint16]int
+	UDPPortBytes	  map[uint16]*AvgBytes
+
 	TotalPacketCount  int
+	TotalBytes		  int
 	TotalConvos       int
 	TotalInternal     int
 	TotalExternal     int
@@ -35,8 +52,17 @@ func (cs *ConverstationStats) Update(packet gopacket.Packet) {
 			srcPort := uint16(tcp.SrcPort)
 			destPort := uint16(tcp.DstPort)
 
-			cs.TCPPortUsage[srcPort]++
-			cs.TCPPortUsage[destPort]++
+			for _, x := range([]uint16{srcPort, destPort}) {
+				cs.TCPPortUsage[x]++
+	
+				if cs.TCPPortBytes[x] == nil {
+					cs.TCPPortBytes[x] = &AvgBytes{Total: 1, Bytes: packet.Metadata().CaptureLength}
+				} else {
+					cs.TCPPortBytes[x].Total++
+					cs.TCPPortBytes[x].Bytes += packet.Metadata().CaptureLength
+				}
+
+			}
 
 		case layers.LayerTypeUDP:
 			udp := transportLayer.(*layers.UDP)
@@ -44,10 +70,21 @@ func (cs *ConverstationStats) Update(packet gopacket.Packet) {
 			srcPort := uint16(udp.SrcPort)
 			destPort := uint16(udp.DstPort)
 
-			cs.UDPPortUsage[srcPort]++
-			cs.UDPPortUsage[destPort]++
+			for _, x := range([]uint16{srcPort, destPort}) {
+				cs.UDPPortUsage[x]++
+	
+				if cs.UDPPortBytes[x] == nil {
+					cs.UDPPortBytes[x] = &AvgBytes{Total: 1, Bytes: packet.Metadata().CaptureLength}
+				} else {
+					cs.UDPPortBytes[x].Total++
+					cs.UDPPortBytes[x].Bytes += packet.Metadata().CaptureLength
+				}
+	
+			}
+
 		}
 
+		cs.TotalBytes += packet.Metadata().CaptureLength
 		cs.TotalConvos++
 
 		if srcSubnet == dstSubnet {
@@ -62,7 +99,11 @@ func NewConverstationStats() *ConverstationStats {
 	return &ConverstationStats {
 		TCPPortUsage:     make(map[uint16]int),
 		UDPPortUsage:     make(map[uint16]int),
+		TCPPortBytes:	  make(map[uint16]*AvgBytes),
+		UDPPortBytes:	  make(map[uint16]*AvgBytes),
+
 		TotalPacketCount: 0,
+		TotalBytes: 	  0,
 		TotalConvos:      0,
 		TotalInternal:    0,
 		TotalExternal:    0,
@@ -93,7 +134,6 @@ func NewHostStats() *HostStats {
 	}
 }
 
-
 func GetSubnetInfo(packet gopacket.Packet) (string, string){
 	
 	srcIP, destIP := GetHostInfo(packet)
@@ -121,7 +161,6 @@ func GetHostInfo(packet gopacket.Packet) (net.IP, net.IP){
 	return srcIP, destIP
 }
 
-
 func main() {
 
 	rand.Seed(888)
@@ -130,12 +169,20 @@ func main() {
 
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-	if len(os.Args) != 2 {
-		log.Error().Msgf("Usage: ./summarize <path_to_pcap> %d", len(os.Args))
+	if len(os.Args) != 4 {
+		log.Error().Msgf("Usage: ./summarize <path_to_pcap> <output_csv> <num_records_to_generate> %d", len(os.Args))
 		os.Exit(1)
 	}
 
 	path := os.Args[1]
+	csvPath := os.Args[2]
+
+	rcdCount, err := strconv.Atoi(os.Args[3])
+
+	if err != nil {
+		log.Error().Msgf("Usage: ./summarize <path_to_pcap> <output_csv> <num_records_to_generate> %d", len(os.Args))
+		os.Exit(1)
+	}
 	
 	if path == "" {
 		log.Error().Msg("No Pcap Path Provided")
@@ -153,6 +200,8 @@ func main() {
 
 	subnetStatsMap := make(map[string]*SubnetStats)
 	hostStatsMap   := make(map[string]*HostStats)
+
+
 
 	for packet := range packetSource.Packets() {
 
@@ -172,17 +221,19 @@ func main() {
 		if !ok {
 			statsSrcHost = NewHostStats()
 			hostStatsMap[srcIP.String()] = statsSrcHost
-		}else{
-			statsSrcHost.SrcConverstation.Update(packet)
 		}
+
+		statsSrcHost.SrcConverstation.Update(packet)
+		
 
 		statsDst, ok := subnetStatsMap[dstSubnet]
 		if !ok {
 			statsDst = NewSubnetStats()
 			subnetStatsMap[dstSubnet] = statsDst
-		}else{
-			statsDst.DstConverstation.Update(packet)
 		}
+
+		statsDst.DstConverstation.Update(packet)
+		
 		
 		statsDstHost, ok := hostStatsMap[destIP.String()]
 		if !ok {
@@ -191,12 +242,12 @@ func main() {
 		}else{
 			statsDstHost.DstConverstation.Update(packet)
 		}
-		
 	}
 
-	displaySubnetStats(subnetStatsMap)
+	//displaySubnetStats(subnetStatsMap)
 
-	simulatedEvents := generateSimulatedEvents(subnetStatsMap, hostStatsMap, 5)
+	simulatedEvents := generateSimulatedEvents(subnetStatsMap, hostStatsMap, rcdCount)
+	writeCSV(csvPath, simulatedEvents)
 	displaySimulatedEvents(simulatedEvents)
 }
 
@@ -241,12 +292,14 @@ func generateSimulatedEvents(subnetStatsMap map[string]*SubnetStats, hostStatsMa
         dstIP := selectRandomIP(hostLabels, hostProbabilities, dstSubnet)
 
         // Select source and destination ports, and protocol
-        srcPort, dstPort, protocol := selectPortsAndProtocol(hostStatsMap[srcIP], hostStatsMap[dstIP])
+        srcPort, dstPort, protocol, bytes := selectPortsAndProtocol(hostStatsMap[srcIP], hostStatsMap[dstIP])
 
         // Create simulated network event
-        event := fmt.Sprintf("%s, %s, %d, %d, %s", srcIP, dstIP, srcPort, dstPort, protocol)
-        simulatedEvents = append(simulatedEvents, event)
-    }
+        event := fmt.Sprintf("%s, %s, %d, %d, %s, %d", srcIP, dstIP, srcPort, dstPort, protocol, bytes)
+		if srcPort <=10000 || dstPort <=10000{
+        	simulatedEvents = append(simulatedEvents, event)
+		}
+	}
 
     return simulatedEvents
 }
@@ -266,17 +319,17 @@ func selectRandomIP(ips []string, probabilities []float32, subnet string) string
     return selectRandomItem(filteredIPs, filteredProbabilities)
 }
 
-
-func selectPortsAndProtocol(srcHostStats, dstHostStats *HostStats) (uint16, uint16, string) {
+func selectPortsAndProtocol(srcHostStats, dstHostStats *HostStats) (uint16, uint16, string, int) {
     var protocol string
     var srcPort, dstPort uint16
+	var bytes int
 
     if srcHostStats == nil || dstHostStats == nil {
         srcPort = uint16(rand.Intn(65536))
         dstPort = uint16(rand.Intn(65536))
         protocol = "TCP"
 
-        return srcPort, dstPort, protocol
+        return srcPort, dstPort, protocol, 0
     }
 
     // Calculate total conversations for both TCP and UDP for source and destination hosts
@@ -352,22 +405,42 @@ func selectPortsAndProtocol(srcHostStats, dstHostStats *HostStats) (uint16, uint
 		return ports[selectedIndex]
 	}
 	
-	
 	if srcHostStats != nil && dstHostStats != nil {
 
     // Select source and destination ports based on the chosen protocol
     if protocol == "TCP" {
         srcPort = selectRandomPort(srcHostStats.SrcConverstation.TCPPortUsage)
         dstPort = selectRandomPort(dstHostStats.DstConverstation.TCPPortUsage)
+		if srcHostStats.SrcConverstation.TCPPortBytes[srcPort] == nil {
+			bytes = int(srcHostStats.SrcConverstation.TotalBytes / (srcHostStats.SrcConverstation.TotalPacketCount+1))
+		} else {
+		bytes = srcHostStats.SrcConverstation.TCPPortBytes[srcPort].ResolveAverage()
+		}
+		if dstHostStats.DstConverstation.TCPPortBytes[dstPort] == nil {
+			bytes = int((bytes + int(dstHostStats.DstConverstation.TotalBytes / (dstHostStats.DstConverstation.TotalPacketCount+1)))/2)
+
+		} else {
+			bytes = int((bytes + dstHostStats.DstConverstation.TCPPortBytes[dstPort].ResolveAverage())/2)
+		}
+
     } else {
         srcPort = selectRandomPort(srcHostStats.SrcConverstation.UDPPortUsage)
         dstPort = selectRandomPort(dstHostStats.DstConverstation.UDPPortUsage)
+		if srcHostStats.SrcConverstation.UDPPortBytes[srcPort] == nil {
+			bytes = int(srcHostStats.SrcConverstation.TotalBytes / (srcHostStats.SrcConverstation.TotalPacketCount+1))
+		} else {
+		bytes = srcHostStats.SrcConverstation.UDPPortBytes[srcPort].ResolveAverage()
+		}
+		if dstHostStats.DstConverstation.UDPPortBytes[dstPort] == nil {
+			bytes = int((bytes + int(dstHostStats.DstConverstation.TotalBytes / (dstHostStats.DstConverstation.TotalPacketCount+1)))/2)
+
+		} else {
+			bytes = int((bytes + dstHostStats.DstConverstation.UDPPortBytes[dstPort].ResolveAverage())/2)
+		}
     }
 	}
-    return srcPort, dstPort, protocol
+    return srcPort, dstPort, protocol, bytes
 }
-
-
 
 func prepareSelection(statsMap interface{}) ([]string, []float32) {
     var labels []string
@@ -420,8 +493,6 @@ func filterIPsBySubnet(ips []string, subnet string) []string {
     return filteredIPs
 }
 
-
-
 func IntExtDecisonPoint(s *SubnetStats) float32{
 	return float32(s.SrcConverstation.TotalInternal/s.SrcConverstation.TotalConvos)
 }
@@ -431,4 +502,55 @@ func displaySimulatedEvents(simulatedEvents []string) {
 	for _, event := range simulatedEvents {
 		fmt.Println(event)
 	}
+}
+
+func writeCSV(filename string, data []string) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	for _, line := range data {
+		record := strings.Split(line, ",")
+		err := writer.Write(record)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func findTimestamps(filename string) (time.Time, time.Time, error) {
+	var earliest, latest time.Time
+
+	handle, err := pcap.OpenOffline(filename)
+	if err != nil {
+		return earliest, latest, err
+	}
+	defer handle.Close()
+
+	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+
+	for packet := range packetSource.Packets() {
+		timestamp := packet.Metadata().Timestamp
+
+		if earliest.IsZero() {
+			earliest = timestamp
+			latest = timestamp
+		} else {
+			if timestamp.Before(earliest) {
+				earliest = timestamp
+			}
+			if timestamp.After(latest) {
+				latest = timestamp
+			}
+		}
+	}
+
+	return earliest, latest, nil
 }
