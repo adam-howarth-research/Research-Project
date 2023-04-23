@@ -34,7 +34,7 @@ func main() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
 	if len(os.Args) != 4 {
-		log.Error().Msg("Usage: ./baseline <node_count> <edgeSampleSize>")
+		log.Error().Msg("Usage: ./bfs <node_count> <edgeSampleSize> <freq>")
 		os.Exit(1)
 	}
 

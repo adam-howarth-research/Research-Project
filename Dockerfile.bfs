@@ -1,0 +1,14 @@
+FROM golang:1.17
+
+WORKDIR /app
+
+COPY ./analytics/BFS-Generic/bfs.go /app
+
+RUN go mod init bfs
+
+RUN go mod tidy
+
+RUN go build bfs.go
+
+
+ENTRYPOINT ["./bfs", "1000", "100000", "5"]

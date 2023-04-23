@@ -1,4 +1,4 @@
-module dockerstats
+module pcr
 
 go 1.18
 

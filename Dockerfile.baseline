@@ -2,7 +2,7 @@ FROM golang:1.17
 
 WORKDIR /app
 
-COPY ../analytics/go/baseline/baseline.go /app
+COPY ../analytics/baseline/baseline.go /app
 
 RUN go mod init baseline
 
@@ -11,4 +11,4 @@ RUN go mod tidy
 RUN go build baseline.go
 
 
-ENTRYPOINT ["./baseline", "369", "369", "1"]
+ENTRYPOINT ["./baseline", "1000", "1", "1"]
