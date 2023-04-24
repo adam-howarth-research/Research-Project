@@ -11,4 +11,4 @@ RUN go mod tidy
 RUN go build kullbackleibler.go
 
 
-ENTRYPOINT ["./kullbackleibler", "1000", "100000", "5"]
+ENTRYPOINT ["./kullbackleibler", "100000", "10000000", "5"]
