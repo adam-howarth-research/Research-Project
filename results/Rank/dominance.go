@@ -1,71 +1,102 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
+	"sort"
+	"strconv"
+	"strings"
 )
 
-type InputData struct {
-	Level    string  `json:"level"`
-	Start    int64   `json:"start"`
-	Nodes    int     `json:"nodes"`
-	Factor   int     `json:"factor"`
-	Elapsed  float64 `json:"elapsed"`
-	Time     int64   `json:"time"`
-	Message  string  `json:"message"`
+type Metric struct {
+	Container string
+	Name      string
+	Value     float64
+	Ranking   int
 }
 
 func main() {
-	inputDataJSONA := []string{
-		// Add your input data as JSON strings here for both algorithms
-	}
+	// Read the input from a file or use the given input as a string
+	input := `Average CPU usage of pcr - dataset 1: 0.01%
+Average memory usage of pcr - dataset 1: 0.06%
+Average CPU usage of pcr - dataset 2: 0.02%
+Average memory usage of pcr - dataset 2: 0.11%
+Average CPU usage of pcr - dataset 3: 0.03%
+Average memory usage of pcr - dataset 3: 0.11%
+Average CPU usage of pcr - dataset 4: 0.09%
+Average memory usage of pcr - dataset 4: 0.54%
+Average CPU usage of klddos - dataset 1: 0.03%
+Average memory usage of klddos - dataset 1: 0.06%
+Average CPU usage of klddos - dataset 2: 0.17%
+Average memory usage of klddos - dataset 2: 0.16%
+Average CPU usage of klddos - dataset 3: 0.85%
+Average memory usage of klddos - dataset 3: 0.89%
+Average CPU usage of klddos - dataset 4: 8.40%
+Average memory usage of klddos - dataset 4: 8.11%
+Average CPU usage of baseline - dataset 1: 0.05%
+Average memory usage of baseline - dataset 1: 0.05%
+Average CPU usage of baseline - dataset 2: 0.05%
+Average memory usage of baseline - dataset 2: 0.06%
+Average CPU usage of baseline - dataset 3: 0.13%
+Average memory usage of baseline - dataset 3: 0.05%
+Average CPU usage of baseline - dataset 4: 0.40%
+Average memory usage of baseline - dataset 4: 0.05%
+Average CPU usage of bfs - dataset 1: 0.09%
+Average memory usage of bfs - dataset 1: 0.11%
+Average CPU usage of bfs - dataset 2: 0.70%
+Average memory usage of bfs - dataset 2: 0.17%
+Average CPU usage of bfs - dataset 3: 3.12%
+Average memory usage of bfs - dataset 3: 0.44%
+Average CPU usage of bfs - dataset 4: 52.43%
+Average memory usage of bfs - dataset 4: 3.26%` 
 
-	var inputDataListA []InputData
-	for _, data := range inputDataJSONA {
-		var inputData InputData
-		err := json.Unmarshal([]byte(data), &inputData)
-		if err != nil {
-			fmt.Println("Error unmarshalling input data:", err)
-			return
+	metrics := parseMetrics(input)
+	containerMetrics := groupByContainer(metrics)
+	rankDominancePerContainer(containerMetrics)
+
+	for container, metrics := range containerMetrics {
+		fmt.Printf("Container: %s\n", container)
+		for _, metric := range metrics {
+			fmt.Printf("%s: %.2f%% (Rank: %d)\n", metric.Name, metric.Value, metric.Ranking)
 		}
-		inputDataListA = append(inputDataListA, inputData)
+		fmt.Println()
+	}
+}
+
+func parseMetrics(input string) []Metric {
+	lines := strings.Split(input, "\n")
+	metrics := make([]Metric, len(lines))
+
+	for i, line := range lines {
+		fields := strings.Split(line, ": ")
+		parts := strings.Split(fields[0], " - ")
+		container, name := parts[0], parts[1]
+		value, _ := strconv.ParseFloat(strings.TrimSuffix(fields[1], "%"), 64)
+		metrics[i] = Metric{Container: container, Name: name, Value: value}
 	}
 
-	inputDataJSONB := []string{
-		// Add your input data as JSON strings here for both algorithms
-	}
+	return metrics
+}
 
-	var inputDataListB []InputData
-	for _, data := range inputDataJSONB {
-		var inputData InputData
-		err := json.Unmarshal([]byte(data), &inputData)
-		if err != nil {
-			fmt.Println("Error unmarshalling input data:", err)
-			return
+func groupByContainer(metrics []Metric) map[string][]Metric {
+	containerMetrics := make(map[string][]Metric)
+	for _, metric := range metrics {
+		containerMetrics[metric.Container] = append(containerMetrics[metric.Container], metric)
+	}
+	return containerMetrics
+}
+
+func rankDominancePerContainer(containerMetrics map[string][]Metric) {
+	for _, metrics := range containerMetrics {
+		sort.SliceStable(metrics, func(i, j int) bool {
+			return metrics[i].Value < metrics[j].Value
+		})
+
+		rank := 1
+		for i := range metrics {
+			if i > 0 && metrics[i].Value != metrics[i-1].Value {
+				rank++
+			}
+			metrics[i].Ranking = rank
 		}
-		inputDataListB = append(inputDataListB, inputData)
-	}
-
-	// Assuming that inputDataList is sorted by time and has an even number of entries
-	dominanceScore := 0
-	for i := 0; i < len(inputDataListA); i++ {
-		algorithmA := inputDataListA[i]
-		algorithmB := inputDataListB[i]
-
-
-		if algorithmA.Elapsed < algorithmB.Elapsed {
-			dominanceScore++
-		} else if algorithmA.Elapsed > algorithmB.Elapsed {
-			dominanceScore--
-		}
-	}
-
-	fmt.Printf("Dominance Score: %d\n", dominanceScore)
-	if dominanceScore > 0 {
-		fmt.Println("Algorithm A is generally more resource-efficient than Algorithm B.")
-	} else if dominanceScore < 0 {
-		fmt.Println("Algorithm B is generally more resource-efficient than Algorithm A.")
-	} else {
-		fmt.Println("Both algorithms have similar resource consumption profiles.")
 	}
 }

@@ -11,4 +11,4 @@ RUN go mod tidy
 RUN go build pcr.go
 
 
-ENTRYPOINT ["./pcr", "100000", "10000000", "5"]
+ENTRYPOINT ["./pcr", "10000", "100000", "5"]
