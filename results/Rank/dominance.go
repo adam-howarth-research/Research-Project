@@ -16,38 +16,46 @@ type Metric struct {
 
 func main() {
 	// Read the input from a file or use the given input as a string
-	input := `Average CPU usage of pcr - dataset 1: 0.01%
-Average memory usage of pcr - dataset 1: 0.06%
-Average CPU usage of pcr - dataset 2: 0.02%
-Average memory usage of pcr - dataset 2: 0.11%
-Average CPU usage of pcr - dataset 3: 0.03%
-Average memory usage of pcr - dataset 3: 0.11%
-Average CPU usage of pcr - dataset 4: 0.09%
-Average memory usage of pcr - dataset 4: 0.54%
-Average CPU usage of klddos - dataset 1: 0.03%
-Average memory usage of klddos - dataset 1: 0.06%
-Average CPU usage of klddos - dataset 2: 0.17%
-Average memory usage of klddos - dataset 2: 0.16%
-Average CPU usage of klddos - dataset 3: 0.85%
-Average memory usage of klddos - dataset 3: 0.89%
-Average CPU usage of klddos - dataset 4: 8.40%
-Average memory usage of klddos - dataset 4: 8.11%
-Average CPU usage of baseline - dataset 1: 0.05%
+	input := `Average CPU usage of bfs - dataset 1: 0.02%
+Average memory usage of bfs - dataset 1: 0.08%
+Average CPU usage of bfs - dataset 2: 0.05%
+Average memory usage of bfs - dataset 2: 0.09%
+Average CPU usage of bfs - dataset 3: 0.07%
+Average memory usage of bfs - dataset 3: 0.11%
+Average CPU usage of bfs - dataset 4: 0.36%
+Average memory usage of bfs - dataset 4: 0.14%
+Average CPU usage of bfs - dataset 5: 7.78%
+Average memory usage of bfs - dataset 5: 0.76%
+Average CPU usage of baseline - dataset 1: 0.02%
 Average memory usage of baseline - dataset 1: 0.05%
-Average CPU usage of baseline - dataset 2: 0.05%
-Average memory usage of baseline - dataset 2: 0.06%
-Average CPU usage of baseline - dataset 3: 0.13%
+Average CPU usage of baseline - dataset 2: 0.03%
+Average memory usage of baseline - dataset 2: 0.05%
+Average CPU usage of baseline - dataset 3: 0.02%
 Average memory usage of baseline - dataset 3: 0.05%
-Average CPU usage of baseline - dataset 4: 0.40%
+Average CPU usage of baseline - dataset 4: 0.03%
 Average memory usage of baseline - dataset 4: 0.05%
-Average CPU usage of bfs - dataset 1: 0.09%
-Average memory usage of bfs - dataset 1: 0.11%
-Average CPU usage of bfs - dataset 2: 0.70%
-Average memory usage of bfs - dataset 2: 0.17%
-Average CPU usage of bfs - dataset 3: 3.12%
-Average memory usage of bfs - dataset 3: 0.44%
-Average CPU usage of bfs - dataset 4: 52.43%
-Average memory usage of bfs - dataset 4: 3.26%` 
+Average CPU usage of baseline - dataset 5: 0.30%
+Average memory usage of baseline - dataset 5: 0.05%
+Average CPU usage of pcr - dataset 1: 0.00%
+Average memory usage of pcr - dataset 1: 0.05%
+Average CPU usage of pcr - dataset 2: 0.00%
+Average memory usage of pcr - dataset 2: 0.06%
+Average CPU usage of pcr - dataset 3: 0.01%
+Average memory usage of pcr - dataset 3: 0.06%
+Average CPU usage of pcr - dataset 4: 0.01%
+Average memory usage of pcr - dataset 4: 0.10%
+Average CPU usage of pcr - dataset 5: 0.07%
+Average memory usage of pcr - dataset 5: 0.31%
+Average CPU usage of klddos - dataset 1: 0.01%
+Average memory usage of klddos - dataset 1: 0.06%
+Average CPU usage of klddos - dataset 2: 0.01%
+Average memory usage of klddos - dataset 2: 0.06%
+Average CPU usage of klddos - dataset 3: 0.01%
+Average memory usage of klddos - dataset 3: 0.05%
+Average CPU usage of klddos - dataset 4: 0.05%
+Average memory usage of klddos - dataset 4: 0.12%
+Average CPU usage of klddos - dataset 5: 0.73%
+Average memory usage of klddos - dataset 5: 0.94%` 
 
 	metrics := parseMetrics(input)
 	containerMetrics := groupByContainer(metrics)
