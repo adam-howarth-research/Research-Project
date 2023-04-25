@@ -11,5 +11,5 @@ RUN go mod tidy
 RUN go build bfs.go
 
 
-ENTRYPOINT ["./bfs", "10000", "100000", "5"]
+ENTRYPOINT ["./bfs", "1083", "59725", "5"]
 
