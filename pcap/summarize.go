@@ -161,7 +161,14 @@ func GetHostInfo(packet gopacket.Packet) (net.IP, net.IP){
 	return srcIP, destIP
 }
 
+var observedHosts map[string]int
+
+var totalPcapEdges map[string]int
+
 func main() {
+
+	observedHosts = make(map[string]int)
+	totalPcapEdges = make(map[string]int)
 
 	rand.Seed(888)
 
@@ -202,12 +209,14 @@ func main() {
 	hostStatsMap   := make(map[string]*HostStats)
 
 
-
+	totalPcapLength := 0 
 	for packet := range packetSource.Packets() {
 
 		srcSubnet, dstSubnet := GetSubnetInfo(packet)
 
 		srcIP, destIP := GetHostInfo(packet)
+
+		totalPcapEdges[srcIP.String()+destIP.String()] = 1
 
 		statsSrc, ok := subnetStatsMap[srcSubnet]
 		if !ok {
@@ -242,14 +251,16 @@ func main() {
 		}else{
 			statsDstHost.DstConverstation.Update(packet)
 		}
+		totalPcapLength++
 	}
 
 	//displaySubnetStats(subnetStatsMap)
 
 	simulatedEvents := generateSimulatedEvents(subnetStatsMap, hostStatsMap, rcdCount)
 	writeCSV(csvPath, simulatedEvents)
-	displaySimulatedEvents(simulatedEvents)
-	fmt.Printf("Host Count: %d\n", len(hostStatsMap))
+	//displaySimulatedEvents(simulatedEvents)
+	fmt.Printf("Pcap Host Count: %d\n Edge Count: %d\n", len(hostStatsMap), totalPcapLength)
+	fmt.Printf("Simulated Host Count: %d\n Edge Count: %d\n", len(observedHosts), rcdCount)
 }
 
 func displaySubnetStats(subnetStatsMap map[string]*SubnetStats) {
@@ -297,9 +308,11 @@ func generateSimulatedEvents(subnetStatsMap map[string]*SubnetStats, hostStatsMa
 
         // Create simulated network event
         event := fmt.Sprintf("%s, %s, %d, %d, %s, %d", srcIP, dstIP, srcPort, dstPort, protocol, bytes)
-		if srcPort <=10000 || dstPort <=10000{
+		//if srcPort <=10000 || dstPort <=10000{
         	simulatedEvents = append(simulatedEvents, event)
-		}
+			observedHosts[srcIP] = 1
+			observedHosts[dstIP] = 1
+		//}
 	}
 
     return simulatedEvents
@@ -445,43 +458,40 @@ func selectPortsAndProtocol(srcHostStats, dstHostStats *HostStats) (uint16, uint
 
 func prepareSelection(statsMap interface{}) ([]string, []float32) {
     var labels []string
-    var totalCounts []int
+    var counts []int
 
     switch stats := statsMap.(type) {
     case map[string]*SubnetStats:
-        for k, v := range stats {
-            labels = append(labels, k)
-            totalCounts = append(totalCounts, v.SrcConverstation.TotalConvos+v.DstConverstation.TotalConvos)
+        for subnet, stat := range stats {
+            labels = append(labels, subnet)
+            counts = append(counts, stat.SrcConverstation.TotalConvos + stat.DstConverstation.TotalConvos)
         }
     case map[string]*HostStats:
-        for k, v := range stats {
-            labels = append(labels, k)
-            totalCounts = append(totalCounts, v.SrcConverstation.TotalConvos+v.DstConverstation.TotalConvos)
+        for host, stat := range stats {
+            labels = append(labels, host)
+            counts = append(counts, stat.SrcConverstation.TotalConvos + stat.DstConverstation.TotalConvos)
         }
     default:
-        panic("unsupported statsMap type")
+        return nil, nil
     }
 
     totalSum := 0
-    for _, count := range totalCounts {
+    for _, count := range counts {
         totalSum += count
     }
 
-    probabilities := make([]float32, len(totalCounts))
+    probabilities := make([]float32, len(counts))
     compoundingBase := float32(0)
 
-    for idx, count := range totalCounts {
+    for idx, count := range counts {
         probVal := float32(count) / float32(totalSum)
         compoundingBase += probVal
         probabilities[idx] = compoundingBase
     }
 
-	if len(labels) != len(probabilities) {
-		return nil, nil
-	}
-
     return labels, probabilities
 }
+
 
 func filterIPsBySubnet(ips []string, subnet string) []string {
     var filteredIPs []string
