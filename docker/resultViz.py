@@ -9,19 +9,22 @@ def read_docker_stats_csv(file_path):
     df['Time'] = (df['start'] + df['end']) / 2
     return df
 
-def plot_cpu_usage(df1, df2, df3, df4, df5, container_name, node_edge_counts, min_start_time1, min_start_time2, min_start_time3, min_start_time4, min_start_time5):
-    container_df1 = df1[df1['Name'] == container_name]
-    container_df2 = df2[df2['Name'] == container_name]
-    container_df3 = df3[df3['Name'] == container_name]
-    container_df4 = df4[df4['Name'] == container_name]
-    container_df5 = df5[df5['Name'] == container_name]
-   
+def plot_cpu_usage(datasets: list, container_name: str):
+
     plt.figure()
-    plt.plot(container_df1['Time'] - min_start_time1, container_df1['CPU %'], label=f"{node_edge_counts[0]} Nodes, {node_edge_counts[1]} Edges")
-    plt.plot(container_df2['Time'] - min_start_time2, container_df2['CPU %'], label=f"{node_edge_counts[2]} Nodes, {node_edge_counts[3]} Edges", alpha=.7)
-    plt.plot(container_df3['Time'] - min_start_time3, container_df3['CPU %'], label=f"{node_edge_counts[4]} Nodes, {node_edge_counts[5]} Edges", alpha=.7)
-    plt.plot(container_df4['Time'] - min_start_time4, container_df4['CPU %'], label=f"{node_edge_counts[6]} Nodes, {node_edge_counts[7]} Edges", alpha=.7)
-    plt.plot(container_df5['Time'] - min_start_time5, container_df5['CPU %'], label=f"{node_edge_counts[8]} Nodes, {node_edge_counts[9]} Edges", alpha=.7)
+
+
+    for dataset in datasets:
+        df = dataset[0]
+        n_c = dataset[1]
+        e_c = dataset[2]
+        min_time = dataset[3]
+
+        container_df = df[df['Name'] == container_name]
+
+   
+        plt.plot(container_df['Time'] - min_time, container_df['CPU %'], label=f"{n_c} Nodes, {e_c} Edges", alpha = .5)
+
 
     plt.xlabel('Iteration')
     plt.ylabel('CPU Usage (%)')
@@ -32,20 +35,20 @@ def plot_cpu_usage(df1, df2, df3, df4, df5, container_name, node_edge_counts, mi
     plt.savefig(f'{container_name}_cpu_usage_comparison.png')
 
 
-def plot_memory_usage(df1, df2, df3, df4, df5, container_name, node_edge_counts, min_start_time1, min_start_time2, min_start_time3, min_start_time4, min_start_time5):
-    container_df1 = df1[df1['Name'] == container_name]
-    container_df2 = df2[df2['Name'] == container_name]
-    container_df3 = df3[df3['Name'] == container_name]
-    container_df4 = df4[df4['Name'] == container_name]
-    container_df5 = df5[df5['Name'] == container_name]
-
+def plot_memory_usage(datasets: list, container_name: str):
 
     plt.figure()
-    plt.plot(container_df1['Time'] - min_start_time1, container_df1['Mem %'], label=f"{node_edge_counts[0]} Nodes, {node_edge_counts[1]} Edges")
-    plt.plot(container_df2['Time'] - min_start_time2, container_df2['Mem %'], label=f"{node_edge_counts[2]} Nodes, {node_edge_counts[3]} Edges", alpha=.7)
-    plt.plot(container_df3['Time'] - min_start_time3, container_df3['Mem %'], label=f"{node_edge_counts[4]} Nodes, {node_edge_counts[5]} Edges", alpha=.7)
-    plt.plot(container_df4['Time'] - min_start_time4, container_df4['Mem %'], label=f"{node_edge_counts[6]} Nodes, {node_edge_counts[7]} Edges", alpha=.7)
-    plt.plot(container_df5['Time'] - min_start_time5, container_df5['Mem %'], label=f"{node_edge_counts[8]} Nodes, {node_edge_counts[9]} Edges", alpha=.7)
+
+
+    for dataset in datasets:
+        df = dataset[0]
+        n_c = dataset[1]
+        e_c = dataset[2]
+        min_time = dataset[3]
+        container_df = df[df['Name'] == container_name]
+
+        plt.plot(container_df['Time'] - min_time, container_df['Mem %'], label=f"{n_c} Nodes, {e_c} Edges", alpha = .5)
+
 
     plt.xlabel('Iteration')
     plt.ylabel('Memory Usage (%)')
@@ -56,27 +59,18 @@ def plot_memory_usage(df1, df2, df3, df4, df5, container_name, node_edge_counts,
     plt.savefig(f'{container_name}_memory_usage_comparison.png')
 
 
-def plot_cpu_usage_rolling_avg(df1, df2, df3, df4, df5, container_name, node_edge_counts, min_start_time1, min_start_time2, min_start_time3, min_start_time4, min_start_time5, window_size=100):
-    container_df1 = df1[df1['Name'] == container_name]
-    container_df2 = df2[df2['Name'] == container_name]
-    container_df3 = df3[df3['Name'] == container_name]
-    container_df4 = df4[df4['Name'] == container_name]
-    container_df5 = df5[df5['Name'] == container_name]
-
-
-    rolling_avg1 = container_df1['CPU %'].rolling(window=window_size).mean()
-    rolling_avg2 = container_df2['CPU %'].rolling(window=window_size).mean()
-    rolling_avg3 = container_df3['CPU %'].rolling(window=window_size).mean()
-    rolling_avg4 = container_df4['CPU %'].rolling(window=window_size).mean()
-    rolling_avg5 = container_df5['CPU %'].rolling(window=window_size).mean()
-
+def plot_cpu_usage_rolling_avg(datasets: list, container_name: str, window_size=100):
 
     plt.figure()
-    plt.plot(container_df1['Time'] - min_start_time1, rolling_avg1, label=f"{node_edge_counts[0]} Nodes, {node_edge_counts[1]} Edges")
-    plt.plot(container_df2['Time'] - min_start_time2, rolling_avg2, label=f"{node_edge_counts[2]} Nodes, {node_edge_counts[3]} Edges", alpha=.7)
-    plt.plot(container_df3['Time'] - min_start_time3, rolling_avg3, label=f"{node_edge_counts[4]} Nodes, {node_edge_counts[5]} Edges", alpha=.7)
-    plt.plot(container_df4['Time'] - min_start_time4, rolling_avg4, label=f"{node_edge_counts[6]} Nodes, {node_edge_counts[7]} Edges", alpha=.7)
-    plt.plot(container_df5['Time'] - min_start_time5, rolling_avg5, label=f"{node_edge_counts[8]} Nodes, {node_edge_counts[9]} Edges", alpha=.7)
+
+    for dataset in datasets:
+        df = dataset[0]
+        n_c = dataset[1]
+        e_c = dataset[2]
+        min_time = dataset[3]
+        container_df = df[df['Name'] == container_name]
+        rolling_avg = container_df['CPU %'].rolling(window=window_size).mean()
+        plt.plot(container_df['Time'] - min_time, rolling_avg, label=f"{n_c} Nodes, {e_c} Edges", alpha = .5)
 
     plt.xlabel('Iteration')
     plt.ylabel('CPU Usage Rolling Average (%)')
@@ -85,26 +79,19 @@ def plot_cpu_usage_rolling_avg(df1, df2, df3, df4, df5, container_name, node_edg
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.savefig(f'{container_name}_cpu_usage_rolling_avg_comparison.png')
-def plot_memory_usage_rolling_avg(df1, df2, df3, df4, df5, container_name, node_edge_counts, min_start_time1, min_start_time2, min_start_time3, min_start_time4, min_start_time5, window_size=100):
-    container_df1 = df1[df1['Name'] == container_name]
-    container_df2 = df2[df2['Name'] == container_name]
-    container_df3 = df3[df3['Name'] == container_name]
-    container_df4 = df4[df4['Name'] == container_name]
-    container_df5 = df5[df5['Name'] == container_name]
 
-    rolling_avg1 = container_df1['Mem %'].rolling(window=window_size).mean()
-    rolling_avg2 = container_df2['Mem %'].rolling(window=window_size).mean()
-    rolling_avg3 = container_df3['Mem %'].rolling(window=window_size).mean()
-    rolling_avg4 = container_df4['Mem %'].rolling(window=window_size).mean()
-    rolling_avg5 = container_df5['Mem %'].rolling(window=window_size).mean()
-
+def plot_memory_usage_rolling_avg(datasets: list, container_name: str, window_size=100):
 
     plt.figure()
-    plt.plot(container_df1['Time'] - min_start_time1, rolling_avg1, label=f"{node_edge_counts[0]} Nodes, {node_edge_counts[1]} Edges")
-    plt.plot(container_df2['Time'] - min_start_time2, rolling_avg2, label=f"{node_edge_counts[2]} Nodes, {node_edge_counts[3]} Edges", alpha=.7)
-    plt.plot(container_df3['Time'] - min_start_time3, rolling_avg3, label=f"{node_edge_counts[4]} Nodes, {node_edge_counts[5]} Edges", alpha=.7)
-    plt.plot(container_df4['Time'] - min_start_time4, rolling_avg4, label=f"{node_edge_counts[6]} Nodes, {node_edge_counts[7]} Edges", alpha=.7)
-    plt.plot(container_df5['Time'] - min_start_time5, rolling_avg5, label=f"{node_edge_counts[8]} Nodes, {node_edge_counts[9]} Edges", alpha=.7)
+
+    for dataset in datasets:
+        df = dataset[0]
+        n_c = dataset[1]
+        e_c = dataset[2]
+        min_time = dataset[3]
+        container_df = df[df['Name'] == container_name]
+        rolling_avg = container_df['Mem %'].rolling(window=window_size).mean()
+        plt.plot(container_df['Time'] - min_time, rolling_avg, label=f"{n_c} Nodes, {e_c} Edges", alpha = .5)
 
     plt.xlabel('Iteration')
     plt.ylabel('Memory Usage Rolling Average (%)')
@@ -115,56 +102,24 @@ def plot_memory_usage_rolling_avg(df1, df2, df3, df4, df5, container_name, node_
     plt.savefig(f'{container_name}_memory_usage_rolling_avg_comparison.png')
 
 
-def calculate_second_half_average(df1, df2, df3, df4, df5):
-    # calculate the mid-point time for each dataset
-    mid_time1 = (df1['start'].max() + df1['end'].min()) / 2
-    mid_time2 = (df2['start'].max() + df2['end'].min()) / 2
-    mid_time3 = (df3['start'].max() + df3['end'].min()) / 2
-    mid_time4 = (df4['start'].max() + df4['end'].min()) / 2
-    mid_time5 = (df5['start'].max() + df5['end'].min()) / 2
+def calculate_second_half_average(datasets: list, container_name):
 
-    
-    unique_container_names = set(df1['Name'].unique()).union(set(df2['Name'].unique())).union(set(df3['Name'].unique())).union(set(df4['Name'].unique())).union(set(df5['Name'].unique()))
-    
-    for container_name in unique_container_names:
-        container_df1 = df1[df1['Name'] == container_name]
-        container_df2 = df2[df2['Name'] == container_name]
-        container_df3 = df3[df3['Name'] == container_name]
-        container_df4 = df4[df4['Name'] == container_name]
-        container_df5 = df5[df5['Name'] == container_name]
-
+    for dataset in datasets:
+        df = dataset[0]
+        n_c = dataset[1]
+        e_c = dataset[2]
+        mid_time = (df['start'].max() + df['end'].min()) / 2
+        container_df = df[df['Name'] == container_name]
         
-        # filter each dataset to include only entries after the mid-point time
-        container_df1_second_half = container_df1[container_df1['start'] > mid_time1]
-        container_df2_second_half = container_df2[container_df2['start'] > mid_time2]
-        container_df3_second_half = container_df3[container_df3['start'] > mid_time3]
-        container_df4_second_half = container_df4[container_df4['start'] > mid_time4]
-        container_df5_second_half = container_df5[container_df5['start'] > mid_time5]
+         # filter each dataset to include only entries after the mid-point time
+        container_df_second_half = container_df[container_df['start'] > mid_time]
 
-        # calculate the average CPU and memory usage for each dataset in the second half
-        avg_cpu_container_df1 = container_df1_second_half['CPU %'].mean()
-        avg_mem_container_df1 = container_df1_second_half['Mem %'].mean()
-        avg_cpu_container_df2 = container_df2_second_half['CPU %'].mean()
-        avg_mem_container_df2 = container_df2_second_half['Mem %'].mean()
-        avg_cpu_container_df3 = container_df3_second_half['CPU %'].mean()
-        avg_mem_container_df3 = container_df3_second_half['Mem %'].mean()
-        avg_cpu_container_df4 = container_df4_second_half['CPU %'].mean()
-        avg_mem_container_df4 = container_df4_second_half['Mem %'].mean()
-        avg_cpu_container_df5 = container_df5_second_half['CPU %'].mean()
-        avg_mem_container_df5 = container_df5_second_half['Mem %'].mean()
-        
+        avg_cpu_container_df = container_df_second_half['CPU %'].mean()
+        avg_mem_container_df = container_df_second_half['Mem %'].mean()
+    
         # print the results
-        print(f"Average CPU usage of {container_name} - dataset 1: {avg_cpu_container_df1:.2f}%")
-        print(f"Average memory usage of {container_name} - dataset 1: {avg_mem_container_df1:.2f}%")
-        print(f"Average CPU usage of {container_name} - dataset 2: {avg_cpu_container_df2:.2f}%")
-        print(f"Average memory usage of {container_name} - dataset 2: {avg_mem_container_df2:.2f}%")
-        print(f"Average CPU usage of {container_name} - dataset 3: {avg_cpu_container_df3:.2f}%")
-        print(f"Average memory usage  of {container_name} - dataset 3: {avg_mem_container_df3:.2f}%")
-        print(f"Average CPU usage of {container_name} - dataset 4: {avg_cpu_container_df4:.2f}%")
-        print(f"Average memory usage of {container_name} - dataset 4: {avg_mem_container_df4:.2f}%")
-        print(f"Average CPU usage of {container_name} - dataset 5: {avg_cpu_container_df5:.2f}%")
-        print(f"Average memory usage of {container_name} - dataset 5: {avg_mem_container_df5:.2f}%")
-
+        print(f"Average CPU usage of {container_name} - dataset 1: {avg_cpu_container_df:.2f}%")
+        print(f"Average memory usage of {container_name} - dataset 1: {avg_mem_container_df:.2f}%")
 
 def main():
     file_path1 = input("Enter the path to the first CSV file: ")
@@ -197,6 +152,7 @@ def main():
     edge_count4 = int(df4NE[1])
     node_count5 = int(df5NE[0])
     edge_count5 = int(df5NE[1])
+
     
     min_start_time1 = df1['start'].min()
     min_start_time2 = df2['start'].min()
@@ -204,17 +160,24 @@ def main():
     min_start_time4 = df4['start'].min()
     min_start_time5 = df5['start'].min()
 
+    dataset1 = (df1, node_count1, edge_count1, min_start_time1)
+    dataset2 = (df2, node_count2, edge_count2, min_start_time2)
+    dataset3 = (df3, node_count3, edge_count3, min_start_time3)
+    dataset4 = (df4, node_count4, edge_count4, min_start_time4)
+    dataset5 = (df5, node_count5, edge_count5, min_start_time5)
+
+    datasets = [dataset1, dataset2, dataset3, dataset4, dataset5]
 
     unique_container_names = set(df1['Name'].unique()).union(set(df2['Name'].unique())).union(set(df3['Name'].unique())).union(set(df4['Name'].unique())).union(set(df5['Name'].unique()))
 
     for container_name in unique_container_names:
-        plot_cpu_usage(df1, df2, df3, df4, df5, container_name, (node_count1, edge_count1, node_count2, edge_count2, node_count3, edge_count3, node_count4, edge_count4, node_count5, edge_count5), min_start_time1, min_start_time2, min_start_time3, min_start_time4, min_start_time5)
-        plot_memory_usage(df1, df2, df3, df4, df5, container_name, (node_count1, edge_count1, node_count2, edge_count2, node_count3, edge_count3, node_count4, edge_count4, node_count5, edge_count5), min_start_time1, min_start_time2, min_start_time3, min_start_time4, min_start_time5)
-        plot_cpu_usage_rolling_avg(df1, df2, df3, df4, df5, container_name, (node_count1, edge_count1, node_count2, edge_count2, node_count3, edge_count3, node_count4, edge_count4, node_count5, edge_count5), min_start_time1, min_start_time2, min_start_time3, min_start_time4, min_start_time5)
-        plot_memory_usage_rolling_avg(df1, df2, df3, df4, df5, container_name, (node_count1, edge_count1, node_count2, edge_count2, node_count3, edge_count3, node_count4, edge_count4, node_count5, edge_count5), min_start_time1, min_start_time2, min_start_time3, min_start_time4, min_start_time5)
+        plot_cpu_usage(datasets, container_name)
+        plot_memory_usage(datasets, container_name)
+        plot_cpu_usage_rolling_avg(datasets, container_name)
+        plot_memory_usage_rolling_avg(datasets, container_name)
+        calculate_second_half_average(datasets, container_name)
 
     print("Graphs saved for each container as [container_name]_cpu_usage_comparison.png, [container_name]_memory_usage_comparison.png, [container_name]_cpu_usage_rolling_avg_comparison.png, and [container_name]_memory_usage_rolling_avg_comparison.png")
-    calculate_second_half_average(df1, df2, df3, df4, df5)
 if __name__ == "__main__":
     main()
 
