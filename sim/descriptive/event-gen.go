@@ -94,14 +94,15 @@ func generateFlows(storeDevices [][]*Node, officeDevices []*Node, duration time.
 	var flows []Flow
 	totalEvents := int(duration.Seconds()) * eventsPerSecond
 
+	officeServer := officeDevices[0] // Designate the first office device as the server
+
 	for i := 0; i < totalEvents; i++ {
 		storeIndex := rand.Intn(len(storeDevices))
 		deviceIndex := rand.Intn(len(storeDevices[storeIndex]))
-		officeDevice := officeDevices[rand.Intn(len(officeDevices))]
 
 		flow := Flow{
 			SourceIP:        storeDevices[storeIndex][deviceIndex].ip,
-			DestinationIP:   officeDevice.ip,
+			DestinationIP:   officeServer.ip, // Change officeDevice to officeServer
 			SourcePort:      randomPort(),
 			DestinationPort: randomPort(),
 			Protocol:        randomProtocol(),
@@ -112,6 +113,7 @@ func generateFlows(storeDevices [][]*Node, officeDevices []*Node, duration time.
 
 	return flows
 }
+
 func randomPort() uint16 {
 	return uint16(rand.Intn(65535-1024) + 1024)
 }
@@ -131,13 +133,19 @@ func createDevicesForStores(storeNodes []*Node) [][]*Node {
 
 	for i, storeNode := range storeNodes {
 		numPosDevices := rand.Intn(8) + 5 // Between 5 and 12 POS devices
-		storeDevices[i] = make([]*Node, numPosDevices+2) // POS devices + inventory + office computer
+		storeDevices[i] = make([]*Node, numPosDevices+3) // POS devices + inventory + office computer + gateway
+
+		gatewayIP := net.ParseIP(fmt.Sprintf("192.168.%d.254", i+1))
+		gatewayNode := &Node{ip: gatewayIP}
+		gatewayNode.edges = append(gatewayNode.edges, storeNode)
+		storeNode.edges = append(storeNode.edges, gatewayNode)
+		storeDevices[i][0] = gatewayNode
 
 		for j := 0; j < numPosDevices+2; j++ {
 			deviceIP := net.ParseIP(fmt.Sprintf("192.168.%d.%d", i+1, j+2))
-			storeDevices[i][j] = &Node{ip: deviceIP}
-			storeDevices[i][j].edges = append(storeDevices[i][j].edges, storeNode)
-			storeNode.edges = append(storeNode.edges, storeDevices[i][j])
+			storeDevices[i][j+1] = &Node{ip: deviceIP}
+			storeDevices[i][j+1].edges = append(storeDevices[i][j+1].edges, gatewayNode)
+			gatewayNode.edges = append(gatewayNode.edges, storeDevices[i][j+1])
 		}
 	}
 
